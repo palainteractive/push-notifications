@@ -251,6 +251,7 @@ public class PushNotificationsPlugin extends Plugin {
         if (notification != null) {
             String title = notification.getTitle();
             String body = notification.getBody();
+            String image = notification.getImageUrl();
             String[] presentation = getConfig().getArray("presentationOptions");
             if (presentation != null) {
                 if (Arrays.asList(presentation).contains("alert")) {
@@ -294,6 +295,7 @@ public class PushNotificationsPlugin extends Plugin {
             }
             remoteMessageData.put("title", title);
             remoteMessageData.put("body", body);
+            remoteMessageData.put("image", image);
             remoteMessageData.put("click_action", notification.getClickAction());
 
             Uri link = notification.getLink();
