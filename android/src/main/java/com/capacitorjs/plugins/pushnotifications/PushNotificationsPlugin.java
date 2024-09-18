@@ -7,10 +7,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.service.notification.StatusBarNotification;
+import android.util.Log;
+import androidx.core.app.NotificationCompat;
 import com.getcapacitor.*;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
@@ -19,7 +25,13 @@ import com.google.firebase.messaging.CommonNotificationBuilder;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.NotificationParams;
 import com.google.firebase.messaging.RemoteMessage;
+
+import java.io.InputStream;
+import java.net.URL;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -251,7 +263,7 @@ public class PushNotificationsPlugin extends Plugin {
         if (notification != null) {
             String title = notification.getTitle();
             String body = notification.getBody();
-            String image = notification.getImageUrl();
+            String imageUrl = (notification.getImageUrl() != null) ? notification.getImageUrl().toString() : null;
             String[] presentation = getConfig().getArray("presentationOptions");
             if (presentation != null) {
                 if (Arrays.asList(presentation).contains("alert")) {
@@ -289,13 +301,18 @@ public class PushNotificationsPlugin extends Plugin {
                             bundle
                         );
 
-                        notificationManager.notify(notificationInfo.tag, notificationInfo.id, notificationInfo.notificationBuilder.build());
+                        NotificationCompat.Builder notificationBuilder = notificationInfo.notificationBuilder;
+
+                        if (imageUrl != null) {
+                            loadImageAndNotify(notificationBuilder, notificationInfo, imageUrl);
+                        } else {
+                            notificationManager.notify(notificationInfo.tag, notificationInfo.id, notificationBuilder.build());
+                        }
                     }
                 }
             }
             remoteMessageData.put("title", title);
             remoteMessageData.put("body", body);
-            remoteMessageData.put("image", image);
             remoteMessageData.put("click_action", notification.getClickAction());
 
             Uri link = notification.getLink();
@@ -307,6 +324,34 @@ public class PushNotificationsPlugin extends Plugin {
         notifyListeners("pushNotificationReceived", remoteMessageData, true);
     }
 
+
+    private void loadImageAndNotify(final NotificationCompat.Builder notificationBuilder, final CommonNotificationBuilder.DisplayNotificationInfo notificationInfo, final String imageUrl) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        executor.execute(() -> {
+        Bitmap bitmap = null;
+        try {
+            InputStream in = new URL(imageUrl).openStream();
+            bitmap = BitmapFactory.decodeStream(in);
+        } catch (Exception e) {
+            Log.e("Notification", "Error downloading image", e);
+        }
+
+        final Bitmap finalBitmap = bitmap;
+        handler.post(() -> {
+            if (finalBitmap != null) {
+            notificationBuilder.setStyle(new NotificationCompat.BigPictureStyle()
+                .bigPicture(finalBitmap)
+                .bigLargeIcon((Bitmap) null)); 
+
+            notificationManager.notify(notificationInfo.tag, notificationInfo.id, notificationBuilder.build());
+            } else {
+            Log.e("Notification", "Bitmap is null, not notifying with image");
+            }
+        });
+        });
+    }
     public static PushNotificationsPlugin getPushNotificationsInstance() {
         if (staticBridge != null && staticBridge.getWebView() != null) {
             PluginHandle handle = staticBridge.getPlugin("PushNotifications");
