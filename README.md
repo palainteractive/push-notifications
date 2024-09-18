@@ -1,4 +1,4 @@
-# @capacitor/push-notifications
+# @capacitor/push-notifications with image support
 
 The Push Notifications API provides access to native push notifications.
 
