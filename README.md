@@ -5,7 +5,7 @@ The Push Notifications API provides access to native push notifications.
 ## Install
 
 ```bash
-npm install @capacitor/push-notifications
+npm install --save https://github.com/palainteractive/push-notifications.git
 npx cap sync
 ```
 
