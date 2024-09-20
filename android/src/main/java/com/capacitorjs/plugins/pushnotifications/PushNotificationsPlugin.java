@@ -341,6 +341,8 @@ public class PushNotificationsPlugin extends Plugin {
         final Bitmap finalBitmap = bitmap;
         handler.post(() -> {
             if (finalBitmap != null) {
+              Bitmap resizedBitmap = Bitmap.createScaledBitmap(finalBitmap, 128, 128, false);
+              notificationBuilder.setLargeIcon(resizedBitmap);
             notificationBuilder.setStyle(new NotificationCompat.BigPictureStyle()
                 .bigPicture(finalBitmap)
                 .bigLargeIcon((Bitmap) null)); 
